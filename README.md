@@ -4,16 +4,15 @@ A Claude Code skill that automatically detects your project type and generates a
 
 ## Features
 
-- Detects Node.js (npm/yarn/pnpm/bun) and Python (uv/poetry/pip/pipenv) projects
+- Detects **Node.js** (npm/yarn/pnpm/bun), **Python** (uv/poetry/pip), **Go**, and **Rust** projects
+- Handles **monorepos** (workspaces, Turborepo, Nx, Lerna, Cargo workspaces)
 - Generates setup, run, and archive scripts
 - Provides Quick Start guide with correct URLs
 - Outputs both Repository Settings and conductor.json formats
-- Handles monorepos and hybrid projects
 
 ## Installation
 
 ```bash
-# Clone to your Claude skills directory
 git clone https://github.com/tygakim/conductor-scripts-skill.git ~/.claude/skills/conductor-scripts
 ```
 
@@ -25,23 +24,33 @@ In any Claude Code session, run:
 /conductor-scripts
 ```
 
-The skill will analyze your project and output:
-1. **Quick Start guide** - How to install deps, run dev server, and access the app
-2. **Repository Settings** - Copy-paste format for Conductor UI
-3. **conductor.json** - JSON format for programmatic use
-
 ## Supported Project Types
 
-| Type | Detection | Setup Command |
-|------|-----------|---------------|
-| npm | package-lock.json | `npm install` |
-| yarn | yarn.lock | `yarn install` |
-| pnpm | pnpm-lock.yaml | `pnpm install` |
-| bun | bun.lockb | `bun install` |
-| uv | pyproject.toml + uv | `uv sync` |
-| poetry | pyproject.toml + poetry | `poetry install` |
-| pip | requirements.txt | `pip install -r requirements.txt` |
-| pipenv | Pipfile | `pipenv install` |
+### Languages
+
+| Type | Detection | Setup Command | Run Command |
+|------|-----------|---------------|-------------|
+| npm | package-lock.json | `npm install` | `npm run dev` |
+| yarn | yarn.lock | `yarn install` | `yarn dev` |
+| pnpm | pnpm-lock.yaml | `pnpm install` | `pnpm dev` |
+| bun | bun.lockb | `bun install` | `bun dev` |
+| uv | pyproject.toml + uv | `uv sync` | `uv run ...` |
+| poetry | pyproject.toml + poetry | `poetry install` | `poetry run ...` |
+| pip | requirements.txt | `pip install -r requirements.txt` | framework-specific |
+| Go | go.mod | `go mod download` | `go run .` or `make run` |
+| Rust | Cargo.toml | `cargo build` | `cargo run` |
+
+### Monorepos
+
+| Type | Detection | Notes |
+|------|-----------|-------|
+| npm workspaces | `"workspaces"` in package.json | Lists available packages |
+| pnpm workspaces | pnpm-workspace.yaml | Lists available packages |
+| Turborepo | turbo.json | `turbo run dev` |
+| Nx | nx.json | `nx serve <app>` |
+| Lerna | lerna.json | `lerna run dev` |
+| Go workspace | go.work | Lists modules |
+| Cargo workspace | `[workspace]` in Cargo.toml | Lists members |
 
 ## Example Output
 
@@ -49,23 +58,23 @@ The skill will analyze your project and output:
 ## Quick Start
 
 1. **Install dependencies:**
-   npm install
+   go mod download
 
 2. **Start the dev server:**
-   npm run dev
+   make run
 
 3. **Open in browser:**
-   http://localhost:3000
+   http://localhost:8080
 
 ---
 
 ## Repository Settings (copy-paste into Conductor)
 
 Setup Script:
-npm install
+go mod download
 
 Run Script:
-npm run dev
+make run
 
 Archive Script:
 None needed

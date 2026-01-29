@@ -27,6 +27,28 @@ Analyze the current project and generate appropriate Conductor scripts for setup
 - `setup.py` - legacy setuptools
 - `Pipfile` - pipenv
 
+### Go Detection
+- `go.mod` - Go modules project
+- Check for `main.go` or `cmd/` directory for entry point
+- Check for `Makefile` with run/dev targets
+
+### Rust Detection
+- `Cargo.toml` - Cargo project
+- Check `[package]` for binary vs library
+- Check for `src/main.rs` (binary) vs `src/lib.rs` (library)
+
+### Monorepo Detection
+Check for these patterns FIRST before individual package detection:
+- **Node.js workspaces**: `package.json` with `"workspaces"` field
+- **pnpm workspaces**: `pnpm-workspace.yaml`
+- **Lerna**: `lerna.json`
+- **Nx**: `nx.json`
+- **Turborepo**: `turbo.json`
+- **Rush**: `rush.json`
+- **Go workspace**: `go.work`
+- **Cargo workspace**: `Cargo.toml` with `[workspace]`
+- **Multiple package.json files**: Check for `packages/`, `apps/`, `libs/` directories
+
 2. **Determine the scripts:**
 
 ### Setup Script (runs when workspace is created)
@@ -41,6 +63,11 @@ Analyze the current project and generate appropriate Conductor scripts for setup
 | pip + requirements.txt | `pip install -r requirements.txt` |
 | pip + pyproject.toml | `pip install -e .` |
 | pipenv | `pipenv install` |
+| Go | `go mod download` |
+| Rust | `cargo build` |
+| Monorepo (npm) | `npm install` (from root) |
+| Monorepo (pnpm) | `pnpm install` |
+| Monorepo (turborepo) | `pnpm install` or `npm install` |
 
 ### Run Script (triggered by Run button)
 Look for these patterns in order of preference:
@@ -58,6 +85,25 @@ Look for these patterns in order of preference:
 2. Django (`django` in deps) → `python manage.py runserver`
 3. Flask (`flask` in deps) → `flask run` or `python app.py`
 4. General script → check `[project.scripts]` or `[tool.poetry.scripts]` in pyproject.toml
+
+**Go**:
+1. Check `Makefile` for `run`, `dev`, or `start` targets → `make run` / `make dev`
+2. Check for `cmd/server/` or `cmd/api/` → `go run ./cmd/server`
+3. Check for `main.go` in root → `go run .`
+4. Air (hot reload) config `.air.toml` → `air`
+
+**Rust**:
+1. Check `Cargo.toml` for `[[bin]]` targets
+2. Default binary → `cargo run`
+3. Specific binary → `cargo run --bin <name>`
+4. cargo-watch for hot reload → `cargo watch -x run`
+
+**Monorepo**:
+1. Check root `package.json` scripts for `dev`, `start`
+2. Turborepo → `turbo run dev` or `pnpm dev`
+3. Nx → `nx serve <app>` or `nx run-many --target=serve`
+4. Lerna → `lerna run dev --parallel`
+5. If no root script, list available packages and ask user which to run
 
 ### Archive Script (runs when workspace is archived)
 Usually not needed. Only suggest if there are:
@@ -93,6 +139,8 @@ Determine the URL based on:
 - FastAPI/Uvicorn → `http://localhost:8000` (with `/docs` for API docs)
 - Django → `http://localhost:8000`
 - Flask → `http://localhost:5000`
+- Go (Gin, Echo, Fiber) → `http://localhost:8080` (check main.go for port)
+- Rust (Actix, Axum, Rocket) → `http://localhost:8080` (check config)
 - Check for PORT in .env or config files
 
 ### Section 2: Repository Settings format
@@ -125,9 +173,11 @@ Only include `archive` in the JSON if one is actually needed.
 
 ## Additional Notes
 
-- If you detect a monorepo (multiple package.json files, or workspaces config), mention this and suggest the user specify which package to run
+- **Monorepos**: If detected, list available packages/apps and ask which one to run. Suggest root-level dev script if available.
 - If the project type is unclear, list what you found and ask the user to clarify
 - For the run script, prefer dev/watch modes over production builds
 - If there's a `.env.example` file, suggest adding `cp .env.example .env` to the setup script (before install)
 - Look for README.md for additional context about running the project
 - Check for docker-compose.yml - if present, mention that Docker might be needed
+- **Go projects**: Check for Air config (`.air.toml`) for hot reload support
+- **Rust projects**: Check for `cargo-watch` in dev dependencies for hot reload
